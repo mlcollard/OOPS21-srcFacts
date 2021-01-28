@@ -231,15 +231,20 @@ int main() {
 
         } else if (*pc == '<' && *std::next(pc) != '/' && *std::next(pc) != '?') {
             // parse start tag
-            std::advance(pc, 1);
-            std::string::const_iterator pnameend = std::find_if(pc, buffer.cend(), [] (char c) { return isspace(c) || c == '>' || c == '/'; });
-            if (pnameend == buffer.cend()) {
+            std::string::const_iterator endpc = std::find(pc, buffer.cend(), '>');
+            if (endpc == buffer.cend()) {
                 pc = refillBuffer(pc, buffer, total);
-                pnameend = std::find_if(pc, buffer.cend(), [] (char c) { return isspace(c) || c == '>' || c == '/'; });
-                if (pnameend == buffer.cend()) {
-                    std::cerr << "parser error : Unterminated start tag '" << std::string(pc, pnameend) << "'\n";
+                endpc = std::find(pc, buffer.cend(), '>');
+                if (endpc == buffer.cend()) {
+                    std::cerr << "parser error: Incomplete element start tag\n";
                     return 1;
                 }
+            }
+            std::advance(pc, 1);
+            std::string::const_iterator pnameend = std::find_if(pc, std::next(endpc), [] (char c) { return isspace(c) || c == '>' || c == '/'; });
+            if (pnameend == std::next(endpc)) {
+                std::cerr << "parser error : Unterminated start tag '" << std::string(pc, pnameend) << "'\n";
+                return 1;
             }
             const std::string qname(pc, pnameend);
             const auto colonpos = qname.find(':');
@@ -266,7 +271,7 @@ int main() {
                 ++file_count;
             else if (local_name == "comment")
                 ++comment_count;
-            pc = std::find_if_not(pc, buffer.cend(), [] (char c) { return isspace(c); });
+            pc = std::find_if_not(pc, std::next(endpc), [] (char c) { return isspace(c); });
             ++depth;
             intag = true;
             if (intag && *pc == '>') {
@@ -277,15 +282,6 @@ int main() {
                 std::advance(pc, 2);
                 intag = false;
                 --depth;
-            }
-            if (intag) {
-                std::string::const_iterator endpc = std::find(pc, buffer.cend(), '>');
-                if (endpc == buffer.cend()) {
-                    pc = refillBuffer(pc, buffer, total);
-                    endpc = std::find(pc, buffer.cend(), '>');
-                }
-                if (endpc == buffer.cend())
-                    return 1;
             }
         } else if (intag && *pc != '>' && *pc != '/' && std::distance(pc, buffer.cend()) > (int) XMLNS_SIZE && std::string(pc, std::next(pc, XMLNS_SIZE)) == "xmlns"
             && (*std::next(pc, XMLNS_SIZE) == ':' || *std::next(pc, XMLNS_SIZE) == '=')) {

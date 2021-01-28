@@ -415,8 +415,7 @@ int main() {
             if (std::distance(pc, buffer.cend()) < 3) {
                 pc = refillBuffer(pc, buffer, total);
                 if (std::distance(pc, buffer.cend()) < 3) {
-                    const std::string partialEntity(pc, buffer.cend());
-                    std::cerr << "parser error : Incomplete entity reference, '" << partialEntity << "'\n";
+                    std::cerr << "parser error : Incomplete entity reference, '" << std::string(pc, buffer.cend()) << "'\n";
                     return 1;
                 }
             }
@@ -430,8 +429,7 @@ int main() {
                 if (std::distance(pc, buffer.cend()) < 4) {
                     pc = refillBuffer(pc, buffer, total);
                     if (std::distance(pc, buffer.cend()) < 4) {
-                        const std::string partialEntity(pc, buffer.cend());
-                        std::cerr << "parser error : Incomplete entity reference, '" << partialEntity << "'\n";
+                        std::cerr << "parser error : Incomplete entity reference, '" << std::string(pc, buffer.cend()) << "'\n";
                         return 1;
                     }
                 }
@@ -449,7 +447,7 @@ int main() {
             textsize += (int) characters.size();
         } else if (*pc != '<') {
             // parse characters
-            std::string::const_iterator endpc = std::find_if(pc, buffer.cend(), [] (char c) { return c == '<' || c == '&'; });
+            const std::string::const_iterator endpc = std::find_if(pc, buffer.cend(), [] (char c) { return c == '<' || c == '&'; });
             const std::string characters(pc, endpc);
             loc += (int) std::count(characters.cbegin(), characters.cend(), '\n');
             textsize += (int) characters.size();

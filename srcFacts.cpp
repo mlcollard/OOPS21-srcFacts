@@ -15,10 +15,10 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <algorithm>
 #include <cstring>
 #include <sys/types.h>
 #include <errno.h>
-#include <algorithm>
 #include <ctype.h>
 
 #if !defined(_MSC_VER)
@@ -64,7 +64,7 @@ std::string::const_iterator refillBuffer(std::string::const_iterator pc, std::st
     if (numbytes == 0)
         return buffer.cend();
 
-    if ((long) numbytes + d < buffer.size())
+    if ((std::string::size_type) (numbytes + d) < buffer.size())
         buffer.resize(numbytes + d);
 
     // update with number of bytes read
@@ -75,6 +75,7 @@ std::string::const_iterator refillBuffer(std::string::const_iterator pc, std::st
 }
 
 int main() {
+    const int XMLNS_SIZE = strlen("xmlns");
     std::string url;
     int textsize = 0;
     int loc = 0;
@@ -270,10 +271,10 @@ int main() {
                 if (endpc == buffer.cend())
                     return 1;
             }
-        } else if (intag && *pc != '>' && *pc != '/' && (int) std::distance(pc, buffer.cend()) > strlen("xmlns") && std::string(pc, std::next(pc, strlen("xmlns"))) == "xmlns"
-            && (*std::next(pc, strlen("xmlns")) == ':' || *std::next(pc, strlen("xmlns")) == '=')) {
+        } else if (intag && *pc != '>' && *pc != '/' && std::distance(pc, buffer.cend()) > (int) XMLNS_SIZE && std::string(pc, std::next(pc, XMLNS_SIZE)) == "xmlns"
+            && (*std::next(pc, XMLNS_SIZE) == ':' || *std::next(pc, XMLNS_SIZE) == '=')) {
             // parse namespace
-            std::advance(pc, strlen("xmlns"));
+            std::advance(pc, XMLNS_SIZE);
             std::string::const_iterator pnameend = std::find(pc, buffer.cend(), '=');
             if (pnameend == buffer.cend())
                 return 1;

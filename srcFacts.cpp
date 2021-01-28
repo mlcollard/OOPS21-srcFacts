@@ -267,7 +267,7 @@ int main() {
                 ++decl_count;
             else if (local_name == "class")
                 ++class_count;
-            else if (local_name == "unit" && depth > 1)
+            else if (local_name == "unit" && depth > 0)
                 ++file_count;
             else if (local_name == "comment")
                 ++comment_count;

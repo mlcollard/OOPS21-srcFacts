@@ -287,9 +287,12 @@ int main() {
             && (*std::next(pc, XMLNS_SIZE) == ':' || *std::next(pc, XMLNS_SIZE) == '=')) {
             // parse namespace
             std::advance(pc, XMLNS_SIZE);
-            std::string::const_iterator pnameend = std::find(pc, buffer.cend(), '=');
-            if (pnameend == buffer.cend())
+            const std::string::const_iterator endpc = std::find(pc, buffer.cend(), '>');
+            std::string::const_iterator pnameend = std::find(pc, std::next(endpc), '=');
+            if (pnameend == std::next(endpc)) {
+                std::cerr << "parser error : incomplete namespace\n";
                 return 1;
+            }
             pc = pnameend;
             std::string prefix;
             if (*pc == ':') {
@@ -297,27 +300,25 @@ int main() {
                 prefix.assign(pc, pnameend);
             }
             pc = std::next(pnameend);
-            pc = std::find_if_not(pc, buffer.cend(), [] (char c) { return isspace(c); });
-            if (pc == buffer.cend()) {
-                pc = refillBuffer(pc, buffer, total);
-                pc = std::find_if_not(pc, buffer.cend(), [] (char c) { return isspace(c); });
-                if (pc == buffer.cend())
-                    return 1;
+            pc = std::find_if_not(pc, std::next(endpc), [] (char c) { return isspace(c); });
+            if (pc == std::next(endpc)) {
+                std::cerr << "parser error : incomplete namespace\n";
+                return 1;
             }
             const char delim = *pc;
-            if (delim != '"' && delim != '\'')
+            if (delim != '"' && delim != '\'') {
+                std::cerr << "parser error : incomplete namespace\n";
                 return 1;
+            }
             std::advance(pc, 1);
-            std::string::const_iterator pvalueend = std::find(pc, buffer.cend(), delim);
-            if (pvalueend == buffer.cend()) {
-                pc = refillBuffer(pc, buffer, total);
-                pvalueend = std::find(pc, buffer.cend(), delim);
-                if (pvalueend == buffer.cend())
-                    return 1;
+            std::string::const_iterator pvalueend = std::find(pc, std::next(endpc), delim);
+            if (pvalueend == std::next(endpc)) {
+                std::cerr << "parser error : incomplete namespace\n";
+                return 1;
             }
             const std::string uri(pc, pvalueend);
             pc = std::next(pvalueend);
-            pc = std::find_if_not(pc, buffer.cend(), [] (char c) { return isspace(c); });
+            pc = std::find_if_not(pc, std::next(endpc), [] (char c) { return isspace(c); });
             if (intag && *pc == '>') {
                 std::advance(pc, 1);
                 intag = false;
@@ -328,8 +329,9 @@ int main() {
             }
         } else if (intag && *pc != '>' && *pc != '/') {
             // parse attribute
-            std::string::const_iterator pnameend = std::find(pc, buffer.cend(), '=');
-            if (pnameend == buffer.cend())
+            const std::string::const_iterator endpc = std::find(pc, buffer.cend(), '>');
+            std::string::const_iterator pnameend = std::find(pc, std::next(endpc), '=');
+            if (pnameend == std::next(endpc))
                 return 1;
             const std::string qname(pc, pnameend);
             const auto colonpos = qname.find(':');
@@ -344,14 +346,10 @@ int main() {
                 local_namebase = qname;
             std::string local_name = std::move(local_namebase);
             pc = std::next(pnameend);
-            pc = std::find_if_not(pc, buffer.cend(), [] (char c) { return isspace(c); });
+            pc = std::find_if_not(pc, std::next(endpc), [] (char c) { return isspace(c); });
             if (pc == buffer.cend()) {
-                pc = refillBuffer(pc, buffer, total);
-                pc = std::find_if_not(pc, buffer.cend(), [] (char c) { return isspace(c); });
-                if (pc == buffer.cend()) {
-                    std::cerr << "parser error : attribute " << qname << " incomplete attribute\n";
-                    return 1;
-                }
+                std::cerr << "parser error : attribute " << qname << " incomplete attribute\n";
+                return 1;
             }
             char delim = *pc;
             if (delim != '"' && delim != '\'') {
@@ -359,15 +357,16 @@ int main() {
                 return 1;
             }
             std::advance(pc, 1);
-            std::string::const_iterator pvalueend = std::find(pc, buffer.cend(), delim);
-            if (pvalueend == buffer.cend()) {
+            std::string::const_iterator pvalueend = std::find(pc, std::next(endpc), delim);
+            if (pvalueend == std::next(endpc)) {
+                std::cerr << "parser error : attribute " << qname << " missing delimiter\n";
                 return 1;
             }
             const std::string value(pc, pvalueend);
             if (local_name == "url")
                 url = value;
             pc = std::next(pvalueend);
-            pc = std::find_if_not(pc, buffer.cend(), [] (char c) { return isspace(c); });
+            pc = std::find_if_not(pc, std::next(endpc), [] (char c) { return isspace(c); });
             if (intag && *pc == '>') {
                 std::advance(pc, 1);
                 intag = false;

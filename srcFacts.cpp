@@ -18,10 +18,8 @@
 #include <cstring>
 #include <sys/types.h>
 #include <errno.h>
-#include <vector>
 #include <algorithm>
 #include <ctype.h>
-#include <stdlib.h>
 
 #if !defined(_MSC_VER)
 #include <sys/uio.h>
@@ -33,8 +31,6 @@
 typedef SSIZE_T ssize_t;
 #define READ _read
 #endif
-
-#include <vector>
 
 const int BUFFER_SIZE = 16 * 16 * 4096;
 
@@ -324,8 +320,16 @@ int main() {
                 return 1;
             const std::string qname(pc, pnameend);
             const auto colonpos = qname.find(':');
-            const std::string prefix     = colonpos != std::string::npos ? qname.substr(0, colonpos) : std::string("");
-            const std::string local_name = colonpos != std::string::npos ? qname.substr(colonpos + 1) : qname;
+            std::string prefixbase;
+            if (colonpos != std::string::npos)
+                prefixbase = qname.substr(0, colonpos);
+            const std::string prefix = std::move(prefixbase);
+            std::string local_namebase;
+            if (colonpos != std::string::npos)
+                local_namebase = qname.substr(colonpos + 1);
+            else
+                local_namebase = qname;
+            std::string local_name = std::move(local_namebase);
             pc = std::next(pnameend);
             pc = std::find_if_not(pc, buffer.cend(), [] (char c) { return isspace(c); });
             if (pc == buffer.cend())

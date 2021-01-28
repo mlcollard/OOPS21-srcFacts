@@ -95,13 +95,11 @@ int main() {
     auto pc = buffer.cend();
     while (true) {
         if (std::distance(pc, buffer.cend()) < 5) {
-            // refill buffer and adjust iterator to ensure 5 elements
+            // refill buffer and adjust iterator
             pc = refillBuffer(pc, buffer, total);
             if (pc == buffer.cend())
                 break;
-
         } else if (*pc == '<' && *std::next(pc) == '?') {
-
             // parse XML declaration
             std::string::const_iterator endpc = std::find(pc, buffer.cend(), '>');
             if (endpc == buffer.cend()) {
@@ -308,7 +306,7 @@ int main() {
                 if (pvalueend == buffer.cend())
                     return 1;
             }
-            //const std::string uri(pc, pvalueend);
+            const std::string uri(pc, pvalueend);
             pc = std::next(pvalueend);
             pc = std::find_if_not(pc, buffer.cend(), [] (char c) { return isspace(c); });
             if (intag && *pc == '>') {
@@ -334,7 +332,7 @@ int main() {
                 return 1;
             char delim = *pc;
             if (delim != '"' && delim != '\'') {
-                // std::cerr << "parser error : attribute " << qname << " missing delimiter\n";
+                std::cerr << "parser error : attribute " << qname << " missing delimiter\n";
                 return 1;
             }
             std::advance(pc, 1);
